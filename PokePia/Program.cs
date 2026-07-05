@@ -9,10 +9,28 @@ internal abstract class Program
 {
     private static readonly CancellationTokenSource CancellationTokenSource = new();
 
-    private static int Main()
+    private static int Main(string[] args)
     {
         Console.CancelKeyPress += ConsoleOnCancelKeyPress;
 
+        var loop = args.Any(a => a.Equals("-loop", StringComparison.OrdinalIgnoreCase));
+        if (loop)
+            Log("Infinite loop enabled. Close the console window to exit.");
+
+        int result;
+        do result = Scan(); // if looping and an error occurs, swallow and continue to next iteration
+        while (loop && !CancellationTokenSource.IsCancellationRequested);
+
+        Console.CancelKeyPress -= ConsoleOnCancelKeyPress;
+        Console.WriteLine();
+        Console.WriteLine("Press any key to exit...");
+        Console.ReadKey();
+
+        return result;
+    }
+
+    private static int Scan()
+    {
         try
         {
             using var client = new TradeClient(CancellationTokenSource, Log);
@@ -35,15 +53,10 @@ internal abstract class Program
             Debug.WriteLine(ex.StackTrace);
             return 1;
         }
-        finally
-        {
-            Console.WriteLine();
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
-        }
     }
 
-    private static void ConsoleOnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) => e.Cancel = true; // Prevent immediate exit
+    private static void ConsoleOnCancelKeyPress(object? sender, ConsoleCancelEventArgs e) =>
+        e.Cancel = true; // Prevent immediate exit when incorrectly attempting to copy
 
     private static void Log(string message) => Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] {message}");
 
@@ -62,6 +75,7 @@ internal abstract class Program
 
     private static void DumpParty(IReadOnlyList<PK8> party, string dir)
     {
+        Log($"Dumping party to: {dir}");
         for (var slot = 0; slot < party.Count; slot++)
         {
             var pk = party[slot];
@@ -76,7 +90,7 @@ internal abstract class Program
 
             var path = Path.Combine(dir, pk.FileName);
             File.WriteAllBytes(path, pk.Data);
-            Log($"    Dumped {pk.FileName} ({pk.Data.Length} bytes) to {path}");
+            Log($"    Dumped {pk.FileName}");
         }
     }
 }
