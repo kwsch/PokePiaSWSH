@@ -1,4 +1,4 @@
-﻿using PKHeX.Core;
+using PKHeX.Core;
 using PokePia.Client;
 using PokePia.Trade;
 using System.Diagnostics;
@@ -37,6 +37,7 @@ internal abstract class Program
         }
         finally
         {
+            Console.WriteLine();
             Console.WriteLine("Press any key to exit...");
             Console.ReadKey();
         }
